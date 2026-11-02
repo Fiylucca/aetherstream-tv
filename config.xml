@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets"
+        xmlns:tizen="http://tizen.org/ns/widgets"
+        id="http://aetherstream.com/AetherStream"
+        version="1.0.0"
+        viewmodes="fullscreen">
+
+    <tizen:application
+        id="aeStream01.AetherStream"
+        package="aeStream01"
+        required_version="10.0" />
+
+    <name>AetherStream Player</name>
+    <description>Reprodutor IPTV para Samsung Smart TV (Tizen OS)</description>
+    <author email="support@aetherstream.com" href="http://aetherstream.com">AetherStream</author>
+    
+    <icon src="icon.png" />
+    <content src="index.html" />
+
+    <!-- Privilégios Tizen Smart TV -->
+    <tizen:privilege name="http://tizen.org/privilege/internet" />
+    <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice" />
+    <tizen:privilege name="http://tizen.org/privilege/tv.audio" />
+    <tizen:privilege name="http://developer.samsung.com/privilege/avplay" />
+    <tizen:privilege name="http://developer.samsung.com/privilege/network.public" />
+
+    <!-- Acesso de rede para streams IPTV e servidores remotos -->
+    <access origin="*" subdomains="true" />
+    <tizen:allow-navigation href="*" />
+
+    <tizen:profile name="tv" />
+    <tizen:setting screen-orientation="landscape" />
+</widget>

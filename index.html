@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080, initial-scale=1.0, user-scalable=no">
+    <title>AetherStream Player</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- 1. Tela de Login -->
+    <div id="screen-login" class="screen">
+        <div class="login-container">
+            <h1 class="brand-title" style="font-size:36px;margin-bottom:6px;">AETHERSTREAM</h1>
+            <p class="brand-subtitle" style="margin-bottom:24px;">Reprodutor de Listas e Mídia Autorizada (Samsung Tizen)</p>
+
+            <div class="login-card">
+                <div class="tabs-container">
+                    <div id="tab-xtream" class="tab-btn focusable active" tabindex="0">Xtream Codes API</div>
+                    <div id="tab-m3u" class="tab-btn focusable" tabindex="0">Lista M3U / URL</div>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Nome da Conexão</label>
+                    <input id="input-name" class="input-field focusable" type="text" placeholder="Minha TV Samsung" tabindex="0">
+                </div>
+
+                <!-- Formulário Xtream -->
+                <div id="form-xtream">
+                    <div class="input-group">
+                        <label class="input-label">Servidor (URL)</label>
+                        <input id="input-server" class="input-field focusable" type="text" placeholder="http://servidor.com:8080" tabindex="0">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Usuário</label>
+                        <input id="input-user" class="input-field focusable" type="text" placeholder="Seu usuário" tabindex="0">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Senha</label>
+                        <input id="input-pass" class="input-field focusable" type="password" placeholder="Sua senha" tabindex="0">
+                    </div>
+                </div>
+
+                <!-- Formulário M3U -->
+                <div id="form-m3u" style="display:none;">
+                    <div class="input-group">
+                        <label class="input-label">URL da Lista M3U</label>
+                        <input id="input-m3u" class="input-field focusable" type="text" placeholder="http://servidor.com/lista.m3u" tabindex="0">
+                    </div>
+                </div>
+
+                <button id="btn-connect" class="btn-primary focusable" tabindex="0">Conectar Lista</button>
+                <div class="login-disclaimer">
+                    Este software não fornece nem inclui canais ou listas. O usuário é responsável por utilizar exclusivamente fluxos aos quais possui autorização de acesso.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Dashboard Principal -->
+    <div id="screen-dashboard" class="screen">
+        <header class="app-header">
+            <div>
+                <h1 class="brand-title">AetherStream</h1>
+                <div id="dash-playlist-name" class="brand-subtitle">Lista Conectada</div>
+            </div>
+            <div id="header-clock" class="header-clock">--:--</div>
+        </header>
+
+        <div class="dashboard-grid">
+            <div id="card-live" class="dash-card focusable" tabindex="0">
+                <div class="dash-icon icon-live">📺</div>
+                <div class="dash-title">TV Ao Vivo</div>
+                <div class="dash-desc">Canais e transmissões ao vivo</div>
+            </div>
+
+            <div id="card-movies" class="dash-card focusable" tabindex="0">
+                <div class="dash-icon icon-movies">🎬</div>
+                <div class="dash-title">Filmes</div>
+                <div class="dash-desc">Catálogo de filmes sob demanda</div>
+            </div>
+
+            <div id="card-series" class="dash-card focusable" tabindex="0">
+                <div class="dash-icon icon-series">🍿</div>
+                <div class="dash-title">Séries</div>
+                <div class="dash-desc">Episódios e temporadas</div>
+            </div>
+
+            <div id="card-favorites" class="dash-card focusable" tabindex="0">
+                <div class="dash-icon icon-favorites">⭐</div>
+                <div class="dash-title">Favoritos</div>
+                <div class="dash-desc">Seus canais marcados</div>
+            </div>
+
+            <div id="card-settings" class="dash-card focusable" tabindex="0">
+                <div class="dash-icon icon-settings">⚙️</div>
+                <div class="dash-title">Configurações</div>
+                <div class="dash-desc">Gerenciar listas e player</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Tela de Canais de TV Ao Vivo -->
+    <div id="screen-live" class="screen">
+        <header class="app-header" style="margin-bottom:14px;">
+            <h2 id="live-section-title" class="brand-title" style="font-size:22px;">TV Ao Vivo</h2>
+            <input id="search-channels" class="search-bar focusable" style="width:360px;margin:0;" type="text" placeholder="Buscar canal..." tabindex="0">
+        </header>
+
+        <div class="split-view">
+            <div class="sidebar-categories">
+                <div class="sidebar-title">Categorias</div>
+                <div id="categories-container" class="categories-list"></div>
+            </div>
+            <div class="content-pane">
+                <div id="channels-container" class="channels-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Tela de VOD (Filmes e Séries) -->
+    <div id="screen-vod" class="screen">
+        <header class="app-header" style="margin-bottom:14px;">
+            <h2 id="vod-section-title" class="brand-title" style="font-size:22px;">Filmes VOD</h2>
+        </header>
+        <div class="content-pane">
+            <div id="vod-grid" class="vod-grid"></div>
+        </div>
+    </div>
+
+    <!-- 5. Reprodutor em Tela Cheia -->
+    <div id="screen-player" class="screen">
+        <!-- AVPlay Object container (apenas Samsung Tizen, oculto no navegador) -->
+        <object id="avplay-object" style="display:none;"></object>
+        <!-- HTML5 Video element (navegador e fallback) -->
+        <video id="video-player" playsinline autoplay></video>
+
+        <!-- Botão Voltar Rápido (Sempre acessível no player) -->
+        <button id="btn-player-quick-back" class="player-quick-back focusable" tabindex="0">← Voltar aos Canais</button>
+
+        <!-- HUD de Volume Flutuante -->
+        <div id="hud-volume" class="hud-volume" style="display:none;">
+            <span id="hud-vol-icon" style="font-size:18px;">🔊</span>
+            <div class="hud-vol-bar">
+                <div id="hud-vol-fill" class="hud-vol-fill" style="width:100%;"></div>
+            </div>
+            <span id="hud-vol-text" style="font-size:13px;font-weight:bold;color:#F8FAFC;">100%</span>
+        </div>
+
+        <!-- OSD Overlay -->
+        <div id="player-osd" class="player-osd">
+            <div class="osd-top">
+                <button id="btn-osd-back" class="osd-btn focusable" tabindex="0">← Voltar</button>
+                <div id="osd-title" class="osd-title">Canal</div>
+                <button id="btn-osd-aspect" class="osd-btn focusable" tabindex="0">Padrão (Fit)</button>
+            </div>
+            <div class="osd-bottom">
+                <button id="btn-osd-playpause" class="osd-btn focusable" style="background:#0284C7;" tabindex="0">Pausar</button>
+                
+                <!-- Controle de Volume Completo -->
+                <div class="volume-container">
+                    <button id="btn-vol-mute" class="vol-btn focusable" tabindex="0" title="Mudo">🔊</button>
+                    <button id="btn-vol-down" class="vol-btn focusable" tabindex="0" title="Diminuir Volume">🔉 -</button>
+                    <input id="slider-volume" type="range" min="0" max="100" value="100" class="volume-slider focusable" tabindex="0">
+                    <button id="btn-vol-up" class="vol-btn focusable" tabindex="0" title="Aumentar Volume">+ 🔊</button>
+                    <span id="vol-level-text" class="vol-text">100%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Indicador de Buffer -->
+        <div id="player-loading" class="player-loading" style="display:none;">
+            <div class="spinner"></div>
+            <div style="font-size:14px;color:#00E5FF;font-weight:bold;">Carregando transmissão...</div>
+        </div>
+    </div>
+
+    <!-- 6. Configurações -->
+    <div id="screen-settings" class="screen">
+        <header class="app-header">
+            <h2 class="brand-title" style="font-size:22px;">Configurações</h2>
+        </header>
+
+        <div class="split-view" style="flex-direction:column;gap:16px;">
+            <div class="sidebar-categories" style="width:100%;height:auto;">
+                <div class="sidebar-title">Lista Ativa</div>
+                <div id="settings-playlist-details" style="font-size:14px;color:#94A3B8;padding:8px 12px;">--</div>
+                <button id="btn-switch-playlist" class="btn-primary focusable" style="width:260px;margin:8px 12px 14px;" tabindex="0">Trocar / Adicionar Lista</button>
+            </div>
+
+            <div class="sidebar-categories" style="width:100%;height:auto;">
+                <div class="sidebar-title">Armazenamento</div>
+                <button id="btn-clear-cache" class="btn-primary focusable" style="width:260px;background:#EF4444;margin:8px 12px 14px;" tabindex="0">Limpar Histórico e Listas</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-msg" class="toast-msg"></div>
+
+    <!-- Scripts da Aplicação -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js"></script>
+    <script src="js/tizen-keys.js"></script>
+    <script src="js/spatial-navigation.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/xtream-client.js"></script>
+    <script src="js/m3u-parser.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
