@@ -12,6 +12,11 @@ const VideoPlayer = {
     volume: 100,
     isMuted: false,
 
+    isSamsungTVBrowser() {
+        const ua = navigator.userAgent || "";
+        return /Tizen|SmartTV|SMART-TV|SamsungBrowser.*TV/i.test(ua) && !this.isAvPlay;
+    },
+
     init() {
         this.videoElement = document.getElementById("video-player");
         this.avplayObject = document.getElementById("avplay-object");
@@ -31,7 +36,11 @@ const VideoPlayer = {
             // Oculta o objeto AVPlay (evita o erro de plugin no navegador)
             if (this.avplayObject) this.avplayObject.style.display = "none";
             if (this.videoElement) this.videoElement.style.display = "block";
-            console.log("Iniciando player usando HTML5 Video + Hls.js.");
+            if (this.isSamsungTVBrowser()) {
+                console.log("Iniciando player usando HTML5 nativo (Samsung TV Browser).");
+            } else {
+                console.log("Iniciando player usando HTML5 Video + Hls.js.");
+            }
         }
 
         // Listener de eventos do video HTML5
@@ -167,6 +176,24 @@ const VideoPlayer = {
         if (this.hls) {
             this.hls.destroy();
             this.hls = null;
+        }
+
+        // Se for o navegador nativo da TV Samsung (Tizen), o browser suporta HLS direto pelo elemento <video>
+        // O Hls.js usa fetch/xhr que é bloqueado por CORS/Mixed Content, enquanto a tag <video src="..."> passa pelo pipeline nativo da TV.
+        if (this.isSamsungTVBrowser()) {
+            console.log("Samsung TV Browser detectado: usando reprodução de vídeo nativa.");
+            this.videoElement.src = url;
+            this.videoElement.play().catch(e => {
+                console.warn("Falha no play nativo direto m3u8, tentando .ts:", e);
+                const fallbackUrl = url.replace(/\.m3u8$/, ".ts");
+                this.videoElement.src = fallbackUrl;
+                this.videoElement.play().catch(err2 => {
+                    console.error("Erro na reprodução nativa:", err2);
+                    this.setLoading(false);
+                    App.showToast("Erro ao reproduzir fluxo na TV.");
+                });
+            });
+            return;
         }
 
         const useHls = typeof Hls !== "undefined" && Hls.isSupported();
