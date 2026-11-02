@@ -1,11 +1,25 @@
-/**
- * Parser de Listas M3U / M3U8 em JavaScript
+﻿/**
+ * Parser de Listas M3U / M3U8 em JavaScript com suporte a Proxy CORS
  */
 const M3UParser = {
     async parseFromUrl(url) {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status} ao baixar lista`);
-        const text = await res.text();
+        let text = "";
+        try {
+            const res = await fetch(url);
+            if (res.ok) {
+                text = await res.text();
+            }
+        } catch (e) {
+            console.warn("Download M3U direto falhou, usando proxy HTTPS...", e);
+        }
+
+        if (!text) {
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+            const res2 = await fetch(proxyUrl);
+            if (!res2.ok) throw new Error(`HTTP ${res2.status} ao baixar lista`);
+            text = await res2.text();
+        }
+
         return this.parseText(text);
     },
 
@@ -52,20 +66,16 @@ const M3UParser = {
             name = extInf.substring(commaIndex + 1).trim();
         }
 
-        const getAttr = (regex) => {
-            const m = extInf.match(regex);
-            return m ? m[1] : null;
-        };
-
-        const tvgName = getAttr(/tvg-name="([^"]*)"/);
-        const tvgLogo = getAttr(/tvg-logo="([^"]*)"/);
-        const groupTitle = getAttr(/group-title="([^"]*)"/);
+        const tvgIdMatch = extInf.match(/tvg-id="([^"]*)"/i);
+        const tvgNameMatch = extInf.match(/tvg-name="([^"]*)"/i);
+        const tvgLogoMatch = extInf.match(/tvg-logo="([^"]*)"/i);
+        const groupTitleMatch = extInf.match(/group-title="([^"]*)"/i);
 
         return {
-            stream_id: Math.random().toString(36).substring(2, 10),
-            name: name || tvgName || "Canal sem nome",
-            stream_icon: tvgLogo,
-            category_id: groupTitle || "Geral",
+            stream_id: tvgIdMatch ? tvgIdMatch[1] : Math.random().toString(36).substring(7),
+            name: name || (tvgNameMatch ? tvgNameMatch[1] : "Sem Nome"),
+            stream_icon: tvgLogoMatch ? tvgLogoMatch[1] : "",
+            category_id: groupTitleMatch ? groupTitleMatch[1] : "Geral",
             streamUrl: url
         };
     }

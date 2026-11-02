@@ -1,5 +1,5 @@
-/**
- * Cliente da API Xtream Codes para Tizen OS
+﻿/**
+ * Cliente da API Xtream Codes para Tizen OS e Web
  */
 class XtreamClient {
     constructor(playlist) {
@@ -24,11 +24,25 @@ class XtreamClient {
         return url;
     }
 
+    async safeFetch(url) {
+        // Tenta primeiro conexão direta
+        try {
+            const res = await fetch(url);
+            if (res.ok) return await res.json();
+        } catch (e) {
+            console.warn("Conexão direta bloqueada pelo navegador, usando proxy CORS HTTPS...", e);
+        }
+
+        // Se falhar (ex: Mixed Content / CORS na TV), usa o proxy HTTPS transparente
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const res2 = await fetch(proxyUrl);
+        if (!res2.ok) throw new Error(`Falha na resposta do servidor (${res2.status})`);
+        return await res2.json();
+    }
+
     async authenticate() {
         const url = this.buildUrl();
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status} ao conectar`);
-        const data = await res.json();
+        const data = await this.safeFetch(url);
         if (!data.user_info || data.user_info.auth !== 1) {
             throw new Error(data.user_info?.status || "Credenciais inválidas");
         }
@@ -37,16 +51,14 @@ class XtreamClient {
 
     async getLiveCategories() {
         const url = this.buildUrl("get_live_categories");
-        const res = await fetch(url);
-        return await res.json();
+        return await this.safeFetch(url);
     }
 
     async getLiveStreams(categoryId = null) {
         const param = (categoryId && categoryId !== "all") ? `category_id=${categoryId}` : null;
         const url = this.buildUrl("get_live_streams", param);
-        const res = await fetch(url);
-        const streams = await res.json();
-        return streams.map(s => ({
+        const streams = await this.safeFetch(url);
+        return (streams || []).map(s => ({
             ...s,
             streamUrl: `${this.getBaseUrl()}/live/${this.playlist.username}/${this.playlist.password}/${s.stream_id}.m3u8`
         }));
@@ -54,16 +66,14 @@ class XtreamClient {
 
     async getVodCategories() {
         const url = this.buildUrl("get_vod_categories");
-        const res = await fetch(url);
-        return await res.json();
+        return await this.safeFetch(url);
     }
 
     async getVodStreams(categoryId = null) {
         const param = (categoryId && categoryId !== "all") ? `category_id=${categoryId}` : null;
         const url = this.buildUrl("get_vod_streams", param);
-        const res = await fetch(url);
-        const items = await res.json();
-        return items.map(v => {
+        const items = await this.safeFetch(url);
+        return (items || []).map(v => {
             const ext = v.container_extension || "mp4";
             return {
                 ...v,
@@ -74,14 +84,12 @@ class XtreamClient {
 
     async getSeriesCategories() {
         const url = this.buildUrl("get_series_categories");
-        const res = await fetch(url);
-        return await res.json();
+        return await this.safeFetch(url);
     }
 
     async getSeries(categoryId = null) {
         const param = (categoryId && categoryId !== "all") ? `category_id=${categoryId}` : null;
         const url = this.buildUrl("get_series", param);
-        const res = await fetch(url);
-        return await res.json();
+        return await this.safeFetch(url);
     }
 }
