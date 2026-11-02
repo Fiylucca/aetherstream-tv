@@ -19,6 +19,17 @@ const App = {
         setInterval(() => this.updateClock(), 1000);
 
         this.activePlaylist = Storage.getActivePlaylist();
+
+        // Suporte a login automático se houver parâmetro ?auto=1 na URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get("auto") === "1" || !this.activePlaylist) {
+            if (urlParams.get("auto") === "1") {
+                this.bindEvents();
+                this.connectPreconfigured();
+                return;
+            }
+        }
+
         if (this.activePlaylist) {
             this.client = new XtreamClient(this.activePlaylist);
             this.showScreen("screen-dashboard");
@@ -27,6 +38,45 @@ const App = {
         }
 
         this.bindEvents();
+    },
+
+    async connectPreconfigured() {
+        this.showToast("Conectando conta padrão...");
+        const playlist = {
+            id: "preconfig_primary",
+            name: "Minha Lista IPTV",
+            type: "XTREAM",
+            serverUrl: "http://cdn888.ovh",
+            username: "GKB3h5",
+            password: "aynsHq"
+        };
+        try {
+            this.client = new XtreamClient(playlist);
+            this.showToast("Autenticando...");
+            await this.client.authenticate();
+            Storage.savePlaylist(playlist);
+            this.activePlaylist = playlist;
+            this.showToast("Conectado com sucesso!");
+            this.showScreen("screen-dashboard");
+        } catch (err) {
+            console.warn("Falha no servidor cdn888.ovh, tentando porcheto.com:", err);
+            // Fallback para porcheto.com se cdn888 falhar
+            try {
+                playlist.serverUrl = "http://porcheto.com";
+                this.client = new XtreamClient(playlist);
+                await this.client.authenticate();
+                Storage.savePlaylist(playlist);
+                this.activePlaylist = playlist;
+                this.showToast("Conectado via porcheto.com!");
+                this.showScreen("screen-dashboard");
+            } catch (err2) {
+                this.showToast(`Erro ao conectar: ${err.message || err2.message}`);
+                // Preenche os campos para o usuário ver
+                document.getElementById("input-server").value = "http://cdn888.ovh";
+                document.getElementById("input-user").value = "GKB3h5";
+                document.getElementById("input-pass").value = "aynsHq";
+            }
+        }
     },
 
     updateClock() {
@@ -100,6 +150,12 @@ const App = {
         const btnConnect = document.getElementById("btn-connect");
         if (btnConnect) {
             btnConnect.addEventListener("click", () => this.handleConnect());
+        }
+
+        // Botão de Conexão Rápida em 1 Clique
+        const btnQuick = document.getElementById("btn-quick-login");
+        if (btnQuick) {
+            btnQuick.addEventListener("click", () => this.connectPreconfigured());
         }
 
         // Cards do Dashboard
